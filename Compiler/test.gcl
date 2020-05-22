@@ -1,0 +1,15 @@
+# This is a test program
+var a = 5
+var b = (a + 5) * (2 + 2)
+
+if (a < b) {
+    a = b
+} elif (a > 5) {
+    a = 5
+} 
+
+if (a == b) {
+    b = 0
+} else {
+    a = 0
+}
