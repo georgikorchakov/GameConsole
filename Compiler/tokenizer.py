@@ -12,7 +12,10 @@ class Token:
 
 class Tokenizer:
     keywords = [
-        "var", "set", "if", "elseif", "else", "end"
+        "var",
+        "if", "elif", "else",
+        "while", "for",
+        "True", "False"
     ]
 
     def __init__(self, source, line):
@@ -138,7 +141,7 @@ class Tokenizer:
                 error(self.line, "unexpected character")
 
 if __name__ == "__main__":
-    tokenizer = Tokenizer("#coment\nvar a 10*(x - 23)\nvar b 4\nif a > 3\nvar pi 3\nvar s 10\n end", 0)
+    tokenizer = Tokenizer("var a = (5+6)*10-5*(3+2)", 0)
     tokens = tokenizer.scan()
 
     from pprint import pprint
