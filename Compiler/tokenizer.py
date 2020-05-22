@@ -80,6 +80,10 @@ class Tokenizer:
             self.add_token("left_paren")
         elif c == ")":
             self.add_token("right_paren")
+        elif c == "{":
+            self.add_token("left_brace")
+        elif c == "}":
+            self.add_token("right_brace")
         elif c == "+":
             self.add_token("plus")
         elif c == "-":
@@ -92,7 +96,7 @@ class Tokenizer:
             if self.match("="): # ==
                 self.add_token("equal_equal")
             else:
-                error(self.line, "expected '==', got '='")
+                self.add_token("equal")
         elif c == "|":
             if self.match("|"): # ||
                 self.add_token("or")
