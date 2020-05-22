@@ -1,25 +1,16 @@
 from tokenizer import Tokenizer
 from parser import Parser
+from reader import read
+import sys
 
 if __name__ == "__main__":
-    tokenizer = Tokenizer('''
-        # This is a test program
-        var a = 5
-        var b = (a + 5) * (2 + 2)
+    if len(sys.argv) == 1:
+        print("Missing code file!\nTry: python3 main.py source.gcl")
+        exit()
 
-        if (a < b) {
-            a = b
-        } elif (a > 5) {
-            a = 5
-        } 
+    code = read(sys.argv[1])
 
-        if (a == b) {
-            b = 0
-        } else {
-            a = 0
-        }
-
-    ''', 0)
+    tokenizer = Tokenizer(code, 0)
     tokens = tokenizer.scan()
 
     from pprint import pprint
