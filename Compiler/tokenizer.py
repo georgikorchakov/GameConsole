@@ -12,7 +12,7 @@ class Token:
 
 class Tokenizer:
     keywords = [
-        "VAR", "SET", "IF", "ELSEIF", "ELSE", "END"
+        "var", "set", "if", "elseif", "else", "end"
     ]
 
     def __init__(self, source, line):
@@ -59,7 +59,7 @@ class Tokenizer:
         
         number_literal = int(self.source[self.start:self.current])
 
-        self.add_token("NUMBER", number_literal)
+        self.add_token("number", number_literal)
 
     def identifier(self):
         while self.peek().isalnum():
@@ -70,54 +70,54 @@ class Tokenizer:
         if text in self.keywords:
             self.add_token(text)
         else:
-            self.add_token("IDENTIFIER")
+            self.add_token("identifier")
 
     def next_token(self):
         c = self.source[self.current]
         self.current += 1
 
         if c == "(":
-            self.add_token("LEFT_PAREN")
+            self.add_token("left_paren")
         elif c == ")":
-            self.add_token("RIGHT_PAREN")
+            self.add_token("right_paren")
         elif c == "+":
-            self.add_token("PLUS")
+            self.add_token("plus")
         elif c == "-":
-            self.add_token("MINUS")
+            self.add_token("minus")
         elif c == "*":
-            self.add_token("STAR")
+            self.add_token("star")
         elif c == "/":
-            self.add_token("SLASH")
+            self.add_token("slash")
         elif c == "=":
             if self.match("="): # ==
-                self.add_token("EQUAL_EQUAL")
+                self.add_token("equal_equal")
             else:
                 error(self.line, "expected '==', got '='")
         elif c == "|":
             if self.match("|"): # ||
-                self.add_token("OR")
+                self.add_token("or")
             else:
                 error(self.line, "expected '||', got '|'")
         elif c == "&":
             if self.match("&"): # &&
-                self.add_token("AND")
+                self.add_token("and")
             else:
                 error(self.line, "expected '||', got '|'")
         elif c == "!":
             if self.match("="): # !=
-                self.add_token("BANG_EQUAL")
+                self.add_token("bang_equal")
             else:
-                self.add_token("BANG")
+                self.add_token("bang")
         elif c == ">":
             if self.match("="): # >=
-                self.add_token("GREATER_EQUAL")
+                self.add_token("greater_equal")
             else:
-                self.add_token("GREATER")
+                self.add_token("greater")
         elif c == "<":
             if self.match("="): # <=
-                self.add_token("LESS_EQUAL")
+                self.add_token("less_equal")
             else:
-                self.add_token("LESS")
+                self.add_token("less")
         elif c == "\n":
             self.line += 1
         elif c in [" ", "\t", "\r"]:
@@ -134,7 +134,7 @@ class Tokenizer:
                 error(self.line, "unexpected character")
 
 if __name__ == "__main__":
-    tokenizer = Tokenizer("#coment\nVAR a 10*(x - 23)\nVAR b 4\nIF a > 3\nVAR pi 3\nVAR s 10\n END", 0)
+    tokenizer = Tokenizer("#coment\nvar a 10*(x - 23)\nvar b 4\nif a > 3\nvar pi 3\nvar s 10\n end", 0)
     tokens = tokenizer.scan()
 
     from pprint import pprint
