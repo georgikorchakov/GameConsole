@@ -8,8 +8,6 @@ if (a < b) {
     a = 5
 } 
 
-if (a == b) {
-    b = 0
-} else {
-    a = 0
+while (a > 5) {
+    a = a - 1
 }

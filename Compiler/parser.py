@@ -69,6 +69,17 @@ class ElifStatement(Statement):
         return f"(elif {self.condition} then {self.block_if_true}"
 
 
+class WhileStatement(Statement):
+    def __init__(self, condition, block):
+        self.condition = condition
+        self.block = block
+    
+    def accept(self, visitor):
+        visitor.visit_while_statement(self)
+
+    def __repr__(self):
+        return f"(while {self.condition}  {self.block}"
+
 class Expression:
     def __init__(self):
         pass
@@ -207,6 +218,17 @@ class Parser:
                 self.consume("right_brace", "expected '}'")
 
             return IfStatement(condition, block_if_true, elifs, block_if_false)
+
+        if self.match("while"):
+            self.consume("left_paren", "expected '('")
+            condition = self.parse_expression()
+            self.consume("right_paren", "expected ')'")
+            self.consume("left_brace", "expected '{'")
+            block = self.parse_block()
+            self.consume("right_brace", "expected '}'")
+
+            return WhileStatement(condition, block)
+
 
         if self.match("identifier"):
             identifier = self.previous()
