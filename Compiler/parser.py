@@ -1,5 +1,5 @@
 from error_reporting import error_token
-
+from tokenizer import Token
 
 class Statement:
     def __init__(self):
@@ -188,57 +188,112 @@ class Parser:
     
     def parse_statement(self):
         if self.match("var"):
-            variable = self.consume("identifier", "expected identifier")
-            self.consume("equal", "expected '='")
-            value = self.parse_expression()
-            return DeclarationStatement(variable, value)
+            return self.var_declaration()
 
         if self.match("if"):
-            self.consume("left_paren", "expected '('")
-            condition = self.parse_expression()
-            self.consume("right_paren", "expected ')'")
-            self.consume("left_brace", "expected '{'")
-            block_if_true = self.parse_block()
-            self.consume("right_brace", "expected '}'")
-
-            elifs = []
-            while self.match("elif"):
-                self.consume("left_paren", "expected '('")
-                elif_condition = self.parse_expression()
-                self.consume("right_paren", "expected ')'")
-                self.consume("left_brace", "expected '{'")
-                block_elif = self.parse_block()
-                self.consume("right_brace", "expected '}'")
-                elifs.append(ElifStatement(elif_condition, block_elif))
-
-            block_if_false = BlockStatement([])
-            if self.match("else"):
-                self.consume("left_brace", "expected '{'")
-                block_if_false = self.parse_block()
-                self.consume("right_brace", "expected '}'")
-
-            return IfStatement(condition, block_if_true, elifs, block_if_false)
+            return self.if_declaration()
 
         if self.match("while"):
-            self.consume("left_paren", "expected '('")
-            condition = self.parse_expression()
-            self.consume("right_paren", "expected ')'")
-            self.consume("left_brace", "expected '{'")
-            block = self.parse_block()
-            self.consume("right_brace", "expected '}'")
+            return self.while_declaration()
 
-            return WhileStatement(condition, block)
-
+        if self.match("for"):
+            return self.for_declaration()
 
         if self.match("identifier"):
-            identifier = self.previous()
-            variable_expression = VariableExpression(identifier)
-            self.consume("equal", "expected '='")
-            expression = self.parse_expression()
+            expression =  self.expression_declaration()
+            self.consume("semicolon", "expected ';'")
+            return expression
 
-            assignment_expression = AssignmentExpression(variable_expression, expression)
-            return ExpressionStatement(assignment_expression)
+    def var_declaration(self):
+        variable = self.consume("identifier", "expected identifier")
+        self.consume("equal", "expected '='")
+        value = self.parse_expression()
+        self.consume("semicolon", "expected ';'")
 
+        return DeclarationStatement(variable, value)
+
+    def if_declaration(self):
+        self.consume("left_paren", "expected '('")
+        condition = self.parse_expression()
+        self.consume("right_paren", "expected ')'")
+        self.consume("left_brace", "expected '{'")
+        block_if_true = self.parse_block()
+        self.consume("right_brace", "expected '}'")
+
+        elifs = []
+        while self.match("elif"):
+            self.consume("left_paren", "expected '('")
+            elif_condition = self.parse_expression()
+            self.consume("right_paren", "expected ')'")
+            self.consume("left_brace", "expected '{'")
+            block_elif = self.parse_block()
+            self.consume("right_brace", "expected '}'")
+            elifs.append(ElifStatement(elif_condition, block_elif))
+
+        block_if_false = BlockStatement([])
+        if self.match("else"):
+            self.consume("left_brace", "expected '{'")
+            block_if_false = self.parse_block()
+            self.consume("right_brace", "expected '}'")
+
+        return IfStatement(condition, block_if_true, elifs, block_if_false)
+
+    def while_declaration(self):
+        self.consume("left_paren", "expected '('")
+        condition = self.parse_expression()
+        self.consume("right_paren", "expected ')'")
+        self.consume("left_brace", "expected '{'")
+        block = self.parse_block()
+        self.consume("right_brace", "expected '}'")
+
+        return WhileStatement(condition, block)
+
+    def expression_declaration(self):
+        identifier = self.previous()
+        variable_expression = VariableExpression(identifier)
+        self.consume("equal", "expected '='")
+        expression = self.parse_expression()
+
+        assignment_expression = AssignmentExpression(variable_expression, expression)
+        return ExpressionStatement(assignment_expression)
+
+    def for_declaration(self):
+        self.consume("left_paren", "expected '('")
+
+        if self.match("semicolon"):
+            initializer = None
+        elif self.match("var"):
+            initializer = self.var_declaration()
+        else:
+            initializer = self.expression_declaration()
+
+        condition = None
+        if not self.match("semicolon"):
+            condition = self.parse_expression()
+        self.consume("semicolon", "expected ';'")
+
+        increment = None
+        if not self.check("right_paren"):
+            self.advance()
+            increment = self.expression_declaration()
+        self.consume("right_paren", "expected ')'")
+
+        self.consume("left_brace", "expected '{'")
+        body = self.parse_block()
+        self.consume("right_brace", "expected '}'")
+
+        if increment != None:
+            body.statements.append(increment)
+
+        if condition == None:
+            condition = LiteralExpression(1)
+        body = WhileStatement(condition, body)
+
+        if initializer != None:
+            body = BlockStatement([initializer, body])
+
+        return body
+    
     def parse_block(self):
         statements = []
         while not self.check("end") and not self.check("else") and not self.check("right_brace") and not self.finished():
@@ -323,6 +378,12 @@ class Parser:
 
         if self.match("identifier"):
             return VariableExpression(self.previous())
+
+        if self.match("True"):
+            return LiteralExpression(1)
+        
+        if self.match("False"):
+            return LiteralExpression(0)
 
         if self.match("left_paren"):
             expression = self.parse_expression()

@@ -1,13 +1,20 @@
 # This is a test program
-var a = 5
-var b = (a + 5) * (2 + 2)
+var a = 5;
+var c = True;
+var b = (a + 5) * (2 + 2);
 
 if (a < b) {
-    a = b
+    a = b;
 } elif (a > 5) {
-    a = 5
+    a = 5;
 } 
 
-while (a > 5) {
-    a = a - 1
+if (a == b){    
+    while (a > 5){
+        a = a - 1;
+    }
+}
+
+for (var i = 0; i < 10; i = i + 1){
+    a = a + i;
 }
