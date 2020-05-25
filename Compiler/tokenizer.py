@@ -95,6 +95,10 @@ class Tokenizer:
             self.add_token("star")
         elif c == "/":
             self.add_token("slash")
+        elif c == ",":
+            self.add_token("comma")
+        elif c == ";":
+            self.add_token("semicolon")
         elif c == "=":
             if self.match("="): # ==
                 self.add_token("equal_equal")
