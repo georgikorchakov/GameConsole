@@ -21,20 +21,21 @@ class ExpressionStatement(Statement):
 
 
 class DeclarationStatement(Statement):
-    def __init__(self, identifier, expression):
+    def __init__(self, data_type, identifier):
+        self.data_type = data_type
         self.identifier = identifier
-        self.expression = expression
 
     def accept(self, visitor):
         visitor.visit_declaration_statement(self)
 
     def __repr__(self):
-        return f"(declare {self.identifier.lexeme} {self.expression})"
+        return f"(declare {self.identifier.lexeme})"
 
 
 class BlockStatement(Statement):
-    def __init__(self, statements):
+    def __init__(self, statements, create_scope=True):
         self.statements = statements
+        self.create_scope = create_scope
     
     def accept(self, visitor):
         visitor.visit_block_statement(self)
@@ -81,7 +82,8 @@ class WhileStatement(Statement):
         return f"(while {self.condition}  {self.block}"
 
 class FunctionStatement(Statement):
-    def __init__(self, name, parameters, body):
+    def __init__(self, data_type, name, parameters, body):
+        self.data_type = data_type
         self.name = name
         self.parameters = parameters
         self.body = body
@@ -201,6 +203,7 @@ class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.current = 0
+        self.data_types = ["int", "uint", "long", "ulong", "char", "bool"]
 
     def parse(self):
         return self.parse_statements()
@@ -213,11 +216,14 @@ class Parser:
         return statements
     
     def parse_statement(self):
-        if self.match("var"):
-            return self.var_declaration()
+        if self.match(*self.data_types):
+            declaration = self.parse_declaration()
 
-        if self.match("function"):
-            return self.function_declaration()
+            if self.check("equal"):
+                return self.var_declaration(declaration)
+
+            if self.check("left_paren"):
+                return self.function_declaration(declaration)
 
         if self.match("if"):
             return self.if_declaration()
@@ -233,13 +239,21 @@ class Parser:
             self.consume("semicolon", "expected ';'")
             return expression
 
-    def var_declaration(self):
-        variable = self.consume("identifier", "expected identifier")
+    def parse_declaration(self):
+        data_type = self.previous()
+        identifier = self.consume("identifier", "expected identifier!")
+
+        return DeclarationStatement(data_type, identifier)
+
+    def var_declaration(self, declaration):
         self.consume("equal", "expected '='")
         value = self.parse_expression()
         self.consume("semicolon", "expected ';'")
 
-        return DeclarationStatement(variable, value)
+        return BlockStatement([
+            declaration,
+            ExpressionStatement(AssignmentExpression(declaration.identifier, value))
+            ], create_scope=False)
 
     def if_declaration(self):
         self.consume("left_paren", "expected '('")
@@ -293,8 +307,9 @@ class Parser:
 
         if self.match("semicolon"):
             initializer = None
-        elif self.match("var"):
-            initializer = self.var_declaration()
+        elif self.match(*self.data_types):
+            declaration = self.parse_declaration()
+            initializer = self.var_declaration(declaration)
         else:
             initializer = self.expression_declaration()
 
@@ -325,8 +340,7 @@ class Parser:
 
         return body
 
-    def function_declaration(self):
-        name = self.consume("identifier", "expected function name!")
+    def function_declaration(self, declaration):
         self.consume("left_paren", "expected '(' after function name!")
 
         parameters = []
@@ -335,9 +349,10 @@ class Parser:
                 if len(parameters) >= 8:
                     error_token(self.peek(), "function can't have more than 8 arguments!")
 
-                parameters.append(self.consume("identifier", "expected parameter name!"))
+                if self.match(*self.data_types):
+                    parameters.append(self.parse_declaration())
 
-                if not self.match("comma"):
+                elif not self.match("comma"):
                     break
                     
         self.consume("right_paren", "expected ')' after function parameters!")
@@ -345,7 +360,7 @@ class Parser:
         body = self.parse_block()
         self.consume("right_brace", "expected '}'")
 
-        return FunctionStatement(name, parameters, body)
+        return FunctionStatement(declaration.data_type, declaration.identifier, parameters, body)
     
     def parse_block(self):
         statements = []

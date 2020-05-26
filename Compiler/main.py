@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     code = read(sys.argv[1])
 
-    tokenizer = Tokenizer(code, 0)
+    tokenizer = Tokenizer(code, 1)
     tokens = tokenizer.scan()
 
     from pprint import pprint

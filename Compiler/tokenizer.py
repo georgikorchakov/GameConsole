@@ -12,7 +12,7 @@ class Token:
 
 class Tokenizer:
     keywords = [
-        "var",
+        "int", "uint", "long", "ulong", "char", "bool",
         "if", "elif", "else",
         "while", "for",
         "True", "False",
