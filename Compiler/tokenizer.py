@@ -66,7 +66,7 @@ class Tokenizer:
         self.add_token("number", number_literal)
 
     def identifier(self):
-        while self.peek().isalnum():
+        while self.peek().isalnum() or self.peek() == "_":
             self.current += 1
 
         text = self.source[self.start:self.current]
@@ -88,6 +88,10 @@ class Tokenizer:
             self.add_token("left_brace")
         elif c == "}":
             self.add_token("right_brace")
+        elif c == "[":
+            self.add_token("left_square")
+        elif c == "]":
+            self.add_token("right_square")
         elif c == "+":
             self.add_token("plus")
         elif c == "-":
@@ -140,7 +144,7 @@ class Tokenizer:
         else:
             if c.isnumeric():
                 self.number()
-            elif c.isalpha():
+            elif c.isalpha() or c == "_":
                 self.identifier()
             else:
                 error(self.line, "unexpected character")

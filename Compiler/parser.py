@@ -29,7 +29,7 @@ class DeclarationStatement(Statement):
         visitor.visit_declaration_statement(self)
 
     def __repr__(self):
-        return f"(declare {self.identifier.lexeme})"
+        return f"({self.data_type.data_type.lexeme}[{self.data_type.length}] {self.identifier.lexeme})"
 
 
 class BlockStatement(Statement):
@@ -140,6 +140,16 @@ class BinaryExpression(Expression):
     def __repr__(self):
         return f"({self.operator.lexeme} {self.left} {self.right})"
 
+class TypeExpression(Expression):
+    def __init__(self, data_type, length=1):
+        self.data_type = data_type
+        self.length = length
+    
+    def accept(self, visitor):
+        visitor.visit_type_expression(self)
+
+    def __repr__(self):
+        return f"({self.data_type} {self.length})"
 
 class GroupingExpression(Expression):
     def __init__(self, expression):
@@ -187,6 +197,17 @@ class VariableExpression(Expression):
         return self.variable.lexeme
 
 
+class ListExpression(Expression):
+    def __init__(self, expressions):
+        self.expressions = expressions
+
+    def accept(self, visitor):
+        visitor.visit_list_expression(self)
+
+    def __repr__(self):
+        return repr(self.expressions)
+
+
 class UnaryExpression(Expression):
     def __init__(self, operator, operand):
         self.operator = operator
@@ -225,6 +246,9 @@ class Parser:
             if self.check("left_paren"):
                 return self.function_declaration(declaration)
 
+            self.consume("semicolon", "expected ';'")
+            return declaration
+
         if self.match("if"):
             return self.if_declaration()
 
@@ -240,7 +264,7 @@ class Parser:
             return expression
 
     def parse_declaration(self):
-        data_type = self.previous()
+        data_type = self.parse_data_type()
         identifier = self.consume("identifier", "expected identifier!")
 
         return DeclarationStatement(data_type, identifier)
@@ -252,7 +276,12 @@ class Parser:
 
         return BlockStatement([
             declaration,
-            ExpressionStatement(AssignmentExpression(declaration.identifier, value))
+            ExpressionStatement(
+                AssignmentExpression(
+                    VariableExpression(declaration.identifier),
+                    value
+                )
+            )
             ], create_scope=False)
 
     def if_declaration(self):
@@ -362,6 +391,16 @@ class Parser:
 
         return FunctionStatement(declaration.data_type, declaration.identifier, parameters, body)
     
+    def parse_data_type(self):
+        data_type = self.previous()
+
+        if self.match("left_square"):
+            length = self.consume("number", "expected number!")
+            self.consume("right_square", "expected ']'!")
+            return TypeExpression(data_type, length=length.literal)
+
+        return TypeExpression(data_type)
+
     def parse_block(self):
         statements = []
         while not self.check("end") and not self.check("else") and not self.check("right_brace") and not self.finished():
@@ -481,6 +520,23 @@ class Parser:
             expression = self.parse_expression()
             self.consume("right_paren", "expect ')' after expression")
             return GroupingExpression(expression)
+        
+        if self.match("left_square"):
+            expressions = []
+            if self.match("right_square"):
+                return ListExpression(expressions)
+            
+            while True:
+                expressions.append(
+                    self.parse_expression()
+                )
+
+                if not self.match("comma"):
+                    break
+
+            self.consume("right_square", "expected ']'!")
+            return ListExpression(expressions)
+
 
         error_token(self.previous(), "expected expression")
         raise Exception()

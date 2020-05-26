@@ -1,4 +1,7 @@
 # This is a test program
+
+ulong[10] my_arr = [1, 2, 3];
+
 int a = 5;
 bool c = True;
 uint b = (a + 5) * (2 + 2);
