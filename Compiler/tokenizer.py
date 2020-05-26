@@ -15,7 +15,8 @@ class Tokenizer:
         "var",
         "if", "elif", "else",
         "while", "for",
-        "True", "False"
+        "True", "False",
+        "function", "return"
     ]
 
     def __init__(self, source, line):

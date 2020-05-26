@@ -80,12 +80,38 @@ class WhileStatement(Statement):
     def __repr__(self):
         return f"(while {self.condition}  {self.block}"
 
+class FunctionStatement(Statement):
+    def __init__(self, name, parameters, body):
+        self.name = name
+        self.parameters = parameters
+        self.body = body
+
+    def accept(self, visitor):
+        visitor.visit_function_statement(self)
+    
+    def __repr__(self):
+        return f"(function {self.name.lexeme} ({self.parameters}) {self.body})"
+
+
 class Expression:
     def __init__(self):
         pass
 
     def accept(self, visitor):
         raise NotImplementedError()
+
+
+class CalleeExpression(Expression):
+    def __init__(self, callee, paren, arguments):
+        self.callee = callee
+        self.paren = paren
+        self.arguments = arguments
+
+    def accept(self, visitor):
+        visitor.visit_callee_expression(self)
+
+    def __repr__(self):
+        return f"(callee {self.callee} {self.arguments})"
 
 
 class AssignmentExpression(Expression):
@@ -190,6 +216,9 @@ class Parser:
         if self.match("var"):
             return self.var_declaration()
 
+        if self.match("function"):
+            return self.function_declaration()
+
         if self.match("if"):
             return self.if_declaration()
 
@@ -251,11 +280,13 @@ class Parser:
     def expression_declaration(self):
         identifier = self.previous()
         variable_expression = VariableExpression(identifier)
-        self.consume("equal", "expected '='")
-        expression = self.parse_expression()
-
-        assignment_expression = AssignmentExpression(variable_expression, expression)
-        return ExpressionStatement(assignment_expression)
+        if self.match("equal"):
+            expression = self.parse_expression()
+            assignment_expression = AssignmentExpression(variable_expression, expression)
+            return ExpressionStatement(assignment_expression)
+        elif self.match("left_paren"):
+            callee_expression = self.finish_call(variable_expression)
+            return ExpressionStatement(callee_expression)
 
     def for_declaration(self):
         self.consume("left_paren", "expected '('")
@@ -293,6 +324,28 @@ class Parser:
             body = BlockStatement([initializer, body])
 
         return body
+
+    def function_declaration(self):
+        name = self.consume("identifier", "expected function name!")
+        self.consume("left_paren", "expected '(' after function name!")
+
+        parameters = []
+        if not self.check("right_paren"):
+            while True:
+                if len(parameters) >= 8:
+                    error_token(self.peek(), "function can't have more than 8 arguments!")
+
+                parameters.append(self.consume("identifier", "expected parameter name!"))
+
+                if not self.match("comma"):
+                    break
+                    
+        self.consume("right_paren", "expected ')' after function parameters!")
+        self.consume("left_brace", "expected '{'")
+        body = self.parse_block()
+        self.consume("right_brace", "expected '}'")
+
+        return FunctionStatement(name, parameters, body)
     
     def parse_block(self):
         statements = []
@@ -370,7 +423,31 @@ class Parser:
             right = self.parse_unary()
             return UnaryExpression(operator, right)
 
-        return self.parse_primary()
+        return self.parse_call()
+
+    def parse_call(self):
+        expression = self.parse_primary()
+
+        while self.match("left_paren"):
+            expression = self.finish_call(expression)
+        
+        return expression
+
+    def finish_call(self, callee):
+        arguments = []
+        if not self.check("right_paren"):
+            while True:
+                if len(arguments) >= 8:
+                    error_token(self.peek(), "function can't have more than 8 arguments!")
+
+                arguments.append(self.parse_expression())
+
+                if not self.match("comma"):
+                    break
+
+        paren = self.consume("right_paren", "expected ')'")
+
+        return CalleeExpression(callee, paren, arguments)
 
     def parse_primary(self):
         if self.match("number"):
