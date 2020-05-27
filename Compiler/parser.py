@@ -1,6 +1,7 @@
 from error_reporting import error_token
 from tokenizer import Token
 
+
 class Statement:
     def __init__(self):
         pass
@@ -64,7 +65,7 @@ class ElifStatement(Statement):
         self.block_if_true = block_if_true
     
     def accept(self, visitor):
-        visitor.visit_if_statement(self)
+        visitor.visit_elif_statement(self)
 
     def __repr__(self):
         return f"(elif {self.condition} then {self.block_if_true}"
@@ -122,7 +123,7 @@ class AssignmentExpression(Expression):
         self.expression = expression
 
     def accept(self, visitor):
-        visitor.visit_visitor_expression(self)
+        visitor.visit_assignment_expression(self)
     
     def __repr__(self):
         return f"(assignement {self.variable} {self.expression})"
