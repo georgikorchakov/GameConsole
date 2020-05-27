@@ -1,5 +1,6 @@
 from tokenizer import Tokenizer
 from parser import Parser
+from compiler import Compiler
 from reader import read
 import sys
 
@@ -20,3 +21,10 @@ if __name__ == "__main__":
     tree = parser.parse()
 
     pprint(tree)
+
+    print("----------------------------------------------")
+    compiler = Compiler(tree)
+    bytecode = compiler.compile()
+    pprint(bytecode)
+
+    print(compiler)

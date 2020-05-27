@@ -1,32 +1,39 @@
+int a = 1;
+int b = 3;
+
+int c = (10 + b) * (a + 4); 
+
 # This is a test program
 
-ulong[10] my_arr = [1, 2, 3];
+#ulong[10] my_arr = [1, 2, 3];
 
-int a = 5;
-bool c = True;
-uint b = (a + 5) * (2 + 2);
+#int a = 5;
+#bool c = True;
+#uint b = (a + 5) * (2 + 2);
 
-if (a < b) {
-    a = b;
-} elif (a > 5) {
-    a = 5;
-} 
+#if (a < b) {
+#    a = b;
+#} elif (a > 5) {
+#    a = 5;
+#} else {
+#    a = c;
+#}
 
-if (a == b){    
-    while (a > 5){
-        a = a - 1;
-    }
-}
+#if (a == b){    
+#    while (a > 5){
+#        a = a - 1;
+#    }
+#}
 
-for (int i = 0; i < 10; i = i + 1){
-    a = a + i;
-}
+#for (int i = 0; i < 10; i = i + 1){
+#    a = a + i;
+#}
 
-int sum (uint a, long b){
-    a = a + b;
-}
+#int sum (uint a, long b){
+#    a = a + b;
+#}
 
-sum(a, b);
+#sum(a, b);
 
-a = sum(a, b + 3) * 3;
+#a = sum(a, b + 3) * 3;
 
