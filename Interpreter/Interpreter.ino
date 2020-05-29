@@ -1,12 +1,14 @@
 #define STACK_LENGTH   128
 #define MEMORY_SIZE    256
-#define PROGRAM_SIZE   0x5F
+#define PROGRAM_SIZE   0x60
 
 // Macros
 #define _FETCH_16BIT_POINTER(instruction) (*((uint16_t*)(instruction + 1)))
 #define _FETCH_16BIT_RELATIVE_POINTER(instruction) (*((uint16_t*)(instruction + 1)) + *(instruction + 3))
 
 // Opcodes
+#define EOF 0x00
+
 #define PUSH_IMMEDIATE 0x01
 #define PUSH_ABSOLUTE  0x02
 #define PUSH_RELATIVE  0x03
@@ -29,6 +31,8 @@
 #define JMP 0x10
 #define CJP 0x11
 
+
+
 typedef struct stack_t {
   uint8_t stack[STACK_LENGTH];
   uint8_t top;
@@ -40,7 +44,16 @@ uint8_t memory[MEMORY_SIZE];
 uint16_t pc = 0;
 
 uint8_t program[PROGRAM_SIZE] = {
-  1, 5, 4, 0, 0, 1, 7, 4, 1, 0, 1, 10, 2, 1, 0, 6, 2, 0, 0, 1, 4, 6, 8, 4, 2, 0, 2, 0, 0, 2, 1, 0, 13, 17, 48, 0, 2, 0, 0, 1, 5, 12, 17, 81, 0, 16, 89, 0, 2, 0, 0, 1, 5, 10, 17, 60, 0, 16, 78, 0, 2, 2, 0, 4, 0, 0, 2, 0, 0, 1, 1, 6, 4, 0, 0, 16, 78, 0, 16, 95, 0, 1, 5, 4, 0, 0, 16, 95, 0, 2, 2, 0, 4, 0, 0
+  1, 5, 4, 0, 0, 1, 7, 4, 1, 0,
+  1, 10, 2, 1, 0, 6, 2, 0, 0, 1,
+  4, 6, 8, 4, 2, 0, 2, 0, 0, 2,
+  1, 0, 13, 17, 48, 0, 2, 0, 0, 1,
+  5, 12, 17, 81, 0, 16, 89, 0, 2, 0,
+  0, 1, 5, 10, 17, 60, 0, 16, 78, 0,
+  2, 2, 0, 4, 0, 0, 2, 0, 0, 1,
+  1, 6, 4, 0, 0, 16, 78, 0, 16, 95,
+  0, 1, 5, 4, 0, 0, 16, 95, 0, 2,
+  2, 0, 4, 0, 0, 0
 };
 
 void setup() {
@@ -120,16 +133,14 @@ void loop() {
       } else {
         pc += 3;
       }
-    
-  }
-  
-  if (pc >= PROGRAM_SIZE) {
-    Serial.println("Result: ");
-    for(int i = 0; i < 8; i++) {
-      Serial.print(memory[i], HEX);
-      Serial.print("  ");
-    }
-    while(true);
+      break;
+    case EOF:
+      Serial.println("Result: ");
+      for(int i = 0; i < 8; i++) {
+        Serial.print(memory[i], HEX);
+        Serial.print("  ");
+      }
+      while(true);
   }
 }
 
