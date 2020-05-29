@@ -1,6 +1,33 @@
-#define STACK_LENGTH 128
-#define MEMORY_SIZE  256
-#define PROGRAM_SIZE 0x5F
+#define STACK_LENGTH   128
+#define MEMORY_SIZE    256
+#define PROGRAM_SIZE   0x5F
+
+// Macros
+#define _FETCH_16BIT_POINTER(instruction) (*((uint16_t*)(instruction + 1)))
+#define _FETCH_16BIT_RELATIVE_POINTER(instruction) (*((uint16_t*)(instruction + 1)) + *(instruction + 3))
+
+// Opcodes
+#define PUSH_IMMEDIATE 0x01
+#define PUSH_ABSOLUTE  0x02
+#define PUSH_RELATIVE  0x03
+
+#define POP_ABSOLUTE   0x04
+#define POP_RELATIVE   0x05
+
+#define ADD 0x06
+#define SUB 0x07
+#define MUL 0x08
+#define DIV 0x09
+
+#define EQU 0x0A
+#define NEQ 0x0B
+#define GRT 0x0C
+#define LES 0x0D
+#define GEQ 0x0E
+#define LEQ 0x0F
+
+#define JMP 0x10
+#define CJP 0x11
 
 typedef struct stack_t {
   uint8_t stack[STACK_LENGTH];
@@ -25,75 +52,71 @@ void loop() {
   uint8_t * instruction = program + pc;
   Serial.println(*instruction, HEX);
   switch(*instruction) {
-    case 0x01:
+    case PUSH_IMMEDIATE:
       push(&value_stack, *(instruction + 1));
       pc += 2;
       break;
-    case 0x02:
-      push(&value_stack, memory[*((uint16_t*)(instruction + 1))]);
+    case PUSH_ABSOLUTE:
+      push(&value_stack, memory[_FETCH_16BIT_POINTER(instruction)]);
       pc += 3;
       break;
-    case 0x03:
-      push(&value_stack, memory[*((uint16_t*)(instruction + 1)) + *(instruction + 3)]);
+    case PUSH_RELATIVE:
+      push(&value_stack, memory[_FETCH_16BIT_RELATIVE_POINTER(instruction)]);
       pc += 4;
       break;
-      
-    case 0x04:
-      memory[*((uint16_t*)(instruction + 1))] = pop(&value_stack);
+    case POP_ABSOLUTE:
+      memory[_FETCH_16BIT_POINTER(instruction)] = pop(&value_stack);
       pc += 3;
       break;
-    case 0x05:
-      memory[*((uint16_t*)(instruction + 1)) + *(instruction + 3)] = pop(&value_stack);
+    case POP_RELATIVE:
+      memory[_FETCH_16BIT_RELATIVE_POINTER(instruction)] = pop(&value_stack);
       pc += 4;
-      break;  
-      
-    case 0x06:
+      break;
+    case ADD:
       add(&value_stack);
       pc += 1;
       break;
-    case 0x07:
+    case SUB:
       sub(&value_stack);
       pc += 1;
-    case 0x08:
+    case MUL:
       mul(&value_stack);
       pc += 1;
       break;
-    case 0x09:
+    case DIV:
       divide(&value_stack);
       pc += 1;
       break;
-
-    case 0x0A:
+    case EQU:
       equal(&value_stack);
       pc += 1;
       break;
-    case 0x0B:
+    case NEQ:
       not_equal(&value_stack);
       pc += 1;
       break;
-    case 0x0C:
+    case GRT:
       greater(&value_stack);
       pc += 1;
       break;
-    case 0x0D:
+    case LES:
       less(&value_stack);
       pc += 1;
       break;
-    case 0x0E:
+    case GEQ:
       greater_equal(&value_stack);
       pc += 1;
       break;
-    case 0x0F:
+    case LEQ:
       less_equal(&value_stack);
       pc += 1;
       break;
-
-    case 0x10:
-      pc = *((uint16_t*)(instruction + 1));
+    case JMP:
+      pc = _FETCH_16BIT_POINTER(instruction);
       break;
-    case 0x11:
+    case CJP:
       if(pop(&value_stack)){
-        pc = *((uint16_t*)(instruction + 1));
+        pc = _FETCH_16BIT_POINTER(instruction);
       } else {
         pc += 3;
       }
@@ -108,9 +131,9 @@ void loop() {
     }
     while(true);
   }
-  
 }
 
+// Helpers
 void push(stack_t * stack, uint8_t number) {
   stack->stack[stack->top] = number;
   stack->top++;
