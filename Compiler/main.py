@@ -25,6 +25,6 @@ if __name__ == "__main__":
     print("----------------------------------------------")
     compiler = Compiler(tree)
     bytecode = compiler.compile()
-    pprint(bytecode)
+    print(bytecode)
 
     print(compiler)
