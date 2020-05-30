@@ -302,8 +302,9 @@ class Parser:
             block_elif = self.parse_block()
             self.consume("right_brace", "expected '}'")
             elifs.append(ElifStatement(elif_condition, block_elif))
-
+        
         block_if_false = BlockStatement([])
+        
         if self.match("else"):
             self.consume("left_brace", "expected '{'")
             block_if_false = self.parse_block()

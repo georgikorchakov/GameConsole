@@ -62,7 +62,6 @@ class Compiler:
                 self.bytecode.append(POP)
                 self.stack_top -= 1
             
-
     def visit_if_statement(self, statement):
         def hex_print(arr):
             st = "["
@@ -136,12 +135,29 @@ class Compiler:
         self.bytecode.append(JMP)
         self.bytecode.append(0x00)
         self.bytecode.append(0x00)
-        
-    def visit_elif_statement(self, statement):
-        pass
 
     def visit_while_statement(self, statement):
-        pass
+        condition_start_address = len(self.bytecode)
+        statement.condition.accept(self)
+
+        self.bytecode.append(CJP)
+        self.bytecode.append((len(self.bytecode) + 5) & 0x00FF)
+        self.bytecode.append(((len(self.bytecode) + 5) & 0xFF00) >> 8)
+
+        self.stack_top -= 1
+
+        end_jmp = len(self.bytecode)
+        self.bytecode.append(JMP)
+        self.bytecode.append(0x00)
+        self.bytecode.append(0x00)
+
+        statement.block.accept(self)
+        self.bytecode.append(JMP)
+        self.bytecode.append(condition_start_address & 0x00FF)
+        self.bytecode.append((condition_start_address & 0xFF00) >> 8)
+
+        self.add_current_position_to_empty_jump(end_jmp)
+
 
     def visit_function_statement(self, statement):
         pass

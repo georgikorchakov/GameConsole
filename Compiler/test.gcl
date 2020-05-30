@@ -1,16 +1,12 @@
-int a = 5;
-int b = 7;
+# Fibonachi
+int nthNumber = 6;
+int currentNumber = 1;
 
-int c = (10 + b) * (a + 4); 
+int previouspreviousNumber = 0;
+int previousNumber = 0;
 
-if (a < b) {
-    if (a == 5){
-        a = c;
-        a = a + 1;
-    }
-} elif (a > 5) {
-    a = 5;
-} else {
-    a = c;
+for (int i = 1; i < nthNumber; i = i + 1) {
+    previouspreviousNumber = previousNumber;
+    previousNumber = currentNumber;
+    currentNumber = previouspreviousNumber + previousNumber;
 }
-
