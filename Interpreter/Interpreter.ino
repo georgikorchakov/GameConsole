@@ -1,5 +1,5 @@
 #define STACK_LENGTH   512
-#define PROGRAM_SIZE   0x63
+#define PROGRAM_SIZE   0x4f
 
 // Macros
 #define _FETCH_16BIT_POINTER(instruction) (*((uint16_t*)(instruction + 1)))
@@ -33,6 +33,9 @@
 #define POP 0x12
 #define DECL 0x13
 
+//#define DEBUG
+#define MEASURE_TIME
+
 typedef struct stack_t {
   uint8_t stack[STACK_LENGTH];
   uint8_t top;
@@ -43,31 +46,46 @@ uint16_t pc = 0;
 uint8_t popped_value;
 
 uint8_t program[PROGRAM_SIZE] = {
-  19, 1, 5, 4, 1, 0, 19, 1, 7, 4, 1, 0, 19, 1, 10, 2, 3, 0, 6, 2, 4, 0, 1, 4, 6, 8, 4, 1, 0, 2, 3, 0, 2, 3, 0, 13, 17, 51, 0, 2, 3, 0, 1, 5, 12, 17, 84, 0, 16, 92, 0, 2, 3, 0, 1, 5, 10, 17, 63, 0, 16, 81, 0, 2, 1, 0, 4, 3, 0, 2, 3, 0, 1, 1, 6, 4, 3, 0, 16, 81, 0, 16, 98, 0, 1, 5, 4, 3, 0, 16, 98, 0, 2, 1, 0, 4, 3, 0, 0
+  19, 1, 6, 4, 1, 0, 19, 1, 1, 4, 1, 0, 19, 1, 0, 4, 1, 0, 19, 1, 0, 4, 1, 0, 19, 1, 1, 4, 1, 0, 2, 1, 0, 2, 6, 0, 13, 17, 43, 0, 16, 77, 0, 2, 2, 0, 4, 3, 0, 2, 4, 0, 4, 2, 0, 2, 3, 0, 2, 3, 0, 6, 4, 4, 0, 2, 1, 0, 1, 1, 6, 4, 1, 0, 16, 30, 0, 18, 0
 };
+
+unsigned long long int start_time = 0;
+unsigned long long int end_time = 0;
 
 void setup() {
   init_stack(&value_stack);
   Serial.begin(9600);
+  
+  #ifdef MEASURE_TIME
+    start_time = micros();
+  #endif
 }
 
 void loop() {
   uint8_t * instruction = program + pc;
-  Serial.println(*instruction, HEX);
+  
+  #ifdef DEBUG
+    Serial.println(*instruction, HEX);
+  #endif
+  
   switch(*instruction) {
     case PUSH_IMMEDIATE:
-      Serial.print("Pushing imediate (at ");
-      Serial.print(value_stack.top, HEX);
-      Serial.print(") ");
-      Serial.println(*(instruction + 1), HEX);
+      #ifdef DEBUG
+        Serial.print("Pushing imediate (at ");
+        Serial.print(value_stack.top, HEX);
+        Serial.print(") ");
+        Serial.println(*(instruction + 1), HEX);
+      #endif
       push(&value_stack, *(instruction + 1));
       pc += 2;
       break;
     case PUSH_ABSOLUTE:
-      Serial.print("Pushing absolute (at ");
-      Serial.print(value_stack.top, HEX);
-      Serial.print(") ");
-      Serial.println(_FETCH_16BIT_POINTER(instruction), HEX);
+      #ifdef DEBUG
+        Serial.print("Pushing absolute (at ");
+        Serial.print(value_stack.top, HEX);
+        Serial.print(") ");
+        Serial.println(_FETCH_16BIT_POINTER(instruction), HEX);
+      #endif
       push(&value_stack, value_stack.stack[value_stack.top - _FETCH_16BIT_POINTER(instruction)]);
       pc += 3;
       break;
@@ -76,10 +94,12 @@ void loop() {
       pc += 4;
       break;
     case POP_ABSOLUTE:
-      Serial.print("Popping absolute (at ");
-      Serial.print(value_stack.top, HEX);
-      Serial.print(") ");
-      Serial.println(_FETCH_16BIT_POINTER(instruction), HEX);
+      #ifdef DEBUG
+        Serial.print("Popping absolute (at ");
+        Serial.print(value_stack.top, HEX);
+        Serial.print(") ");
+        Serial.println(_FETCH_16BIT_POINTER(instruction), HEX);
+      #endif
       popped_value = pop(&value_stack);
       value_stack.stack[value_stack.top - _FETCH_16BIT_POINTER(instruction)] = popped_value;
       pc += 3;
@@ -90,12 +110,14 @@ void loop() {
       pc += 4;
       break;
     case ADD:
-      Serial.print("Add (at ");
-      Serial.print(value_stack.top, HEX);
-      Serial.print(") ");
-      Serial.print(value_stack.stack[value_stack.top - 1], HEX);
-      Serial.print(" + ");
-      Serial.println(value_stack.stack[value_stack.top - 2], HEX);
+      #ifdef DEBUG
+        Serial.print("Add (at ");
+        Serial.print(value_stack.top, HEX);
+        Serial.print(") ");
+        Serial.print(value_stack.stack[value_stack.top - 1], HEX);
+        Serial.print(" + ");
+        Serial.println(value_stack.stack[value_stack.top - 2], HEX);
+      #endif
       add(&value_stack);
       pc += 1;
       break;
@@ -103,12 +125,14 @@ void loop() {
       sub(&value_stack);
       pc += 1;
     case MUL:
-      Serial.print("Multiply (at ");
-      Serial.print(value_stack.top, HEX);
-      Serial.print(") ");
-      Serial.print(value_stack.stack[value_stack.top - 1], HEX);
-      Serial.print(" * ");
-      Serial.println(value_stack.stack[value_stack.top - 2], HEX);
+      #ifdef DEBUG
+        Serial.print("Multiply (at ");
+        Serial.print(value_stack.top, HEX);
+        Serial.print(") ");
+        Serial.print(value_stack.stack[value_stack.top - 1], HEX);
+        Serial.print(" * ");
+        Serial.println(value_stack.stack[value_stack.top - 2], HEX);
+      #endif
       mul(&value_stack);
       pc += 1;
       break;
@@ -117,12 +141,14 @@ void loop() {
       pc += 1;
       break;
     case EQU:
-      Serial.print("Compare (at ");
-      Serial.print(value_stack.top, HEX);
-      Serial.print(") ");
-      Serial.print(value_stack.stack[value_stack.top - 1], HEX);
-      Serial.print(" == ");
-      Serial.println(value_stack.stack[value_stack.top - 2], HEX);
+      #ifdef DEBUG
+        Serial.print("Compare (at ");
+        Serial.print(value_stack.top, HEX);
+        Serial.print(") ");
+        Serial.print(value_stack.stack[value_stack.top - 1], HEX);
+        Serial.print(" == ");
+        Serial.println(value_stack.stack[value_stack.top - 2], HEX);
+      #endif
       equal(&value_stack);
       pc += 1;
       break;
@@ -135,12 +161,14 @@ void loop() {
       pc += 1;
       break;
     case LES:
-      Serial.print("Compare (at ");
-      Serial.print(value_stack.top, HEX);
-      Serial.print(") ");
-      Serial.print(value_stack.stack[value_stack.top - 1], HEX);
-      Serial.print(" < ");
-      Serial.println(value_stack.stack[value_stack.top - 2], HEX);
+      #ifdef DEBUG
+        Serial.print("Compare (at ");
+        Serial.print(value_stack.top, HEX);
+        Serial.print(") ");
+        Serial.print(value_stack.stack[value_stack.top - 1], HEX);
+        Serial.print(" < ");
+        Serial.println(value_stack.stack[value_stack.top - 2], HEX);
+      #endif
       less(&value_stack);
       pc += 1;
       break;
@@ -155,23 +183,37 @@ void loop() {
     case JMP:
       pc = _FETCH_16BIT_POINTER(instruction);
       break;
+    case POP:
+      value_stack.top--;
+      pc += 1;
+      break;
     case CJP:
       if(pop(&value_stack)){
-        Serial.print("CJP to ");
-        Serial.println(_FETCH_16BIT_POINTER(instruction), HEX);
+        #ifdef DEBUG
+          Serial.print("CJP to ");
+          Serial.println(_FETCH_16BIT_POINTER(instruction), HEX);
+        #endif
         pc = _FETCH_16BIT_POINTER(instruction);
       } else {
         pc += 3;
       }
       break;
     case DECL:
-      Serial.print("Declare (at ");
-      Serial.print(value_stack.top, HEX);
-      Serial.println(") ");
+      #ifdef DEBUG
+        Serial.print("Declare (at ");
+        Serial.print(value_stack.top, HEX);
+        Serial.println(") ");
+      #endif
       value_stack.top++;
       pc += 1;
       break;
     case EOF:
+      #ifdef MEASURE_TIME
+        end_time = micros();
+        Serial.print("Program execution time = ");
+        Serial.print((int)(end_time - start_time));
+        Serial.println("us");
+      #endif
       print_stack();
       while(true);
   }
