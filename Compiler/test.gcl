@@ -1,12 +1,10 @@
-# Fibonachi
-int nthNumber = 6;
-int currentNumber = 1;
+# Fibonacci
 
-int previouspreviousNumber = 0;
-int previousNumber = 0;
-
-for (int i = 1; i < nthNumber; i = i + 1) {
-    previouspreviousNumber = previousNumber;
-    previousNumber = currentNumber;
-    currentNumber = previouspreviousNumber + previousNumber;
+int fib(int n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return fib(n - 1) + fib(n - 2);
 }
+
+int a = fib(12);

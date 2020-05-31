@@ -1,5 +1,6 @@
 from opcodes import *
 from error_reporting import error
+from parser import VariableExpression, LiteralExpression
 
 class Variable:
     def __init__(self, data_type, name, address):
@@ -11,6 +12,21 @@ class Variable:
         if self.data_type in ["int", "uint", "char", "bool"]:
             return 1
 
+    def __repr__(self):
+        return f"({self.name}: addr {self.address})"
+
+
+class Function:
+    def __init__(self, data_type, name, address, number_of_declarations, number_of_scopes):
+        self.data_type = data_type
+        self.name = name
+        self.address = address
+        self.number_of_declarations = number_of_declarations
+        self.number_of_scopes = number_of_scopes
+
+    def __repr__(self):
+        return f"{self.data_type} {self.name}(Declarations:{self.number_of_declarations}) Addr:{self.address}"
+
 
 class Compiler:
     def __init__(self, statements):
@@ -21,15 +37,17 @@ class Compiler:
         self.variables = [{}]
         self.stack_top = 0
 
+        self.functions = {}
+        self.last_function = []
+
     def compile(self):
         for statement in self.statements:
-            print(statement)
             statement.accept(self)
         
         self.bytecode.append(EOF)
         return self.bytecode
 
-    def add_variable(self, data_type, name): # DONE
+    def add_variable(self, data_type, name):
         self.variables[-1][name] = Variable(data_type, name, self.stack_top)
         self.stack_top += 1
         #self.stack_top += self.variables[name].get_length()
@@ -50,7 +68,11 @@ class Compiler:
         self.bytecode.append(DECL)
         self.add_variable(statement.data_type.data_type.lexeme, statement.identifier.lexeme)
 
-    def visit_block_statement(self, statement): # DONE
+        if len(self.last_function) > 0:
+            if self.last_function[-1].number_of_scopes == len(self.variables):
+                self.last_function[-1].number_of_declarations += 1
+
+    def visit_block_statement(self, statement):
         if statement.create_scope == True:
             self.variables.append({})
         
@@ -63,14 +85,6 @@ class Compiler:
                 self.stack_top -= 1
             
     def visit_if_statement(self, statement):
-        def hex_print(arr):
-            st = "["
-            for el in arr:
-                st += hex(el) + ","
-            
-            st += "]"
-            print(st)
-
         empty_jump_possitions = []
 
         # Put first condition in bytecode
@@ -147,9 +161,7 @@ class Compiler:
         self.stack_top -= 1
 
         end_jmp = len(self.bytecode)
-        self.bytecode.append(JMP)
-        self.bytecode.append(0x00)
-        self.bytecode.append(0x00)
+        self.append_empty_jump()
 
         statement.block.accept(self)
         self.bytecode.append(JMP)
@@ -160,10 +172,62 @@ class Compiler:
 
 
     def visit_function_statement(self, statement):
-        pass
+        jump_before_function_start = len(self.bytecode)
+        self.append_empty_jump()
 
+        self.variables.append({})
+        self.functions[statement.name.lexeme] = Function(statement.data_type.data_type.lexeme, statement.name.lexeme, len(self.bytecode), 0, len(self.variables))
+
+        for parameter in statement.parameters:
+            self.add_variable(parameter.data_type.data_type.lexeme, parameter.identifier.lexeme)
+            self.functions[statement.name.lexeme].number_of_declarations += 1
+
+        self.last_function.append(self.functions[statement.name.lexeme])   
+        statement.body.accept(self)
+        self.functions[statement.name.lexeme] = self.last_function.pop()
+
+        self.stack_top -= self.functions[statement.name.lexeme].number_of_declarations
+
+        self.add_current_position_to_empty_jump(jump_before_function_start)
+        self.variables.pop()
+
+    def visit_return_statement(self, statement):
+        statement.expression.accept(self)
+
+        self.bytecode.append(STR)
+        self.stack_top -= 1
+
+        for _ in range(self.last_function[-1].number_of_declarations):
+            self.bytecode.append(POP)
+    
+        self.bytecode.append(JST)    
+        
     def visit_callee_expression(self, expression):
-        pass
+        empty_16bit_jump = len(self.bytecode)
+        self.push_to_stack_16bit(0)
+
+        self.stack_top += 2
+        for argument in expression.arguments:
+            argument.accept(self)
+        self.stack_top -= 2
+
+        self.bytecode.append(JMP)
+        self.bytecode.append(self.functions[expression.callee.variable.lexeme].address & 0x00FF)
+        self.bytecode.append((self.functions[expression.callee.variable.lexeme].address & 0xFF00) >> 8)
+
+        self.stack_top -= len(expression.arguments)
+
+        self.bytecode[empty_16bit_jump + 1] = len(self.bytecode) & 0x00FF
+        self.bytecode[empty_16bit_jump + 3] = (len(self.bytecode) & 0xFF00) >> 8
+
+        self.bytecode.append(RET)
+        self.stack_top += 1
+
+    def push_to_stack_16bit(self, var):
+        self.bytecode.append(PUSH_IMMEDIATE)
+        self.bytecode.append(var & 0x00FF)
+        self.bytecode.append(PUSH_IMMEDIATE)
+        self.bytecode.append((var & 0xFF00) >> 8)
 
     def visit_assignment_expression(self, expression):
         expression.expression.accept(self)
@@ -245,9 +309,6 @@ class Compiler:
         def get_command_number(i):
             return to_eight_bit_hex(i & 0x00FF) + " " + to_eight_bit_hex((i & 0xFF00) >> 8) + ":  "
 
-        #string = "------\nVariables\n"
-        #for var_name in self.variables:
-        #    string += str(var_name) + " = " + str(to_eight_bit_hex(self.variables[var_name].address & 0x00FF)) + " " + str(to_eight_bit_hex((self.variables[var_name].address & 0xFF00) >> 8)) + "\n"
         string = "------\n"
 
         i = 0
@@ -271,6 +332,14 @@ class Compiler:
                 i = i + 2
             elif opcode == DECL:
                 string += get_command_number(i) + "DECL\n"
+            elif opcode == STR:
+                string += get_command_number(i) + "STR\n"
+            elif opcode == JST:
+                string += get_command_number(i) + "JST\n"
+            elif opcode == RET:
+                string += get_command_number(i) + "RET\n"
+            elif opcode == POP:
+                string += get_command_number(i) + "POP\n"
             elif opcode == ADD:
                 string += get_command_number(i) + "ADD\n"
             elif opcode == SUB:
@@ -293,6 +362,8 @@ class Compiler:
                 string += get_command_number(i) + "LEQ\n"
             elif opcode == EOF:
                 string += get_command_number(i) + "EOF\n"
+            else:
+                string += get_command_number(i) + str(opcode)
                 
             i = i + 1
 

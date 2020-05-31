@@ -24,4 +24,10 @@ CJP = 0x11
 POP = 0x12
 DECL = 0x13
 
+JST = 0x14  # Jump from stack
+
+RET = 0x15  # Push rv register on the top of the stack
+STR = 0x16  # Store last element in rv register
+
+
 

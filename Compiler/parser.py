@@ -82,6 +82,18 @@ class WhileStatement(Statement):
     def __repr__(self):
         return f"(while {self.condition}  {self.block}"
 
+
+class ReturnStatement(Statement):
+    def __init__(self, expression):
+        self.expression = expression
+    
+    def accept(self, visitor):
+        visitor.visit_return_statement(self)
+
+    def __repr__(self):
+        return f"(return {self.expression})"
+
+
 class FunctionStatement(Statement):
     def __init__(self, data_type, name, parameters, body):
         self.data_type = data_type
@@ -259,6 +271,9 @@ class Parser:
         if self.match("for"):
             return self.for_declaration()
 
+        if self.match("return"):
+            return self.return_declaration()
+
         if self.match("identifier"):
             expression =  self.expression_declaration()
             self.consume("semicolon", "expected ';'")
@@ -388,11 +403,20 @@ class Parser:
                     
         self.consume("right_paren", "expected ')' after function parameters!")
         self.consume("left_brace", "expected '{'")
-        body = self.parse_block()
+
+        # Compiler creates scope automaticaly for functions
+        body = self.parse_block(create_scope=False)
+        
         self.consume("right_brace", "expected '}'")
 
         return FunctionStatement(declaration.data_type, declaration.identifier, parameters, body)
     
+    def return_declaration(self):
+        expression = self.parse_expression()
+        self.consume("semicolon", "expected ';'")
+
+        return ReturnStatement(expression)
+
     def parse_data_type(self):
         data_type = self.previous()
 
@@ -403,12 +427,12 @@ class Parser:
 
         return TypeExpression(data_type)
 
-    def parse_block(self):
+    def parse_block(self, create_scope=True):
         statements = []
         while not self.check("end") and not self.check("else") and not self.check("right_brace") and not self.finished():
             statements.append(self.parse_statement())
 
-        return BlockStatement(statements)
+        return BlockStatement(statements, create_scope)
 
     def parse_expression(self):
         return self.parse_or()
