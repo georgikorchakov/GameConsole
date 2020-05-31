@@ -237,7 +237,7 @@ class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.current = 0
-        self.data_types = ["int", "uint", "long", "ulong", "char", "bool"]
+        self.data_types = ["void", "int", "uint", "long", "ulong", "char", "bool"]
 
     def parse(self):
         return self.parse_statements()

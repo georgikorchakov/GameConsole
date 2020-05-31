@@ -172,6 +172,7 @@ class Compiler:
 
 
     def visit_function_statement(self, statement):
+        print(self.stack_top)
         jump_before_function_start = len(self.bytecode)
         self.append_empty_jump()
 
@@ -186,10 +187,18 @@ class Compiler:
         statement.body.accept(self)
         self.functions[statement.name.lexeme] = self.last_function.pop()
 
-        self.stack_top -= self.functions[statement.name.lexeme].number_of_declarations
+        if self.functions[statement.name.lexeme].data_type == "void":
+            for _ in range(self.functions[statement.name.lexeme].number_of_declarations):
+                self.bytecode.append(POP)
+                self.stack_top -= 1
+    
+            self.bytecode.append(JST)
+        else:
+            self.stack_top -= self.functions[statement.name.lexeme].number_of_declarations
 
         self.add_current_position_to_empty_jump(jump_before_function_start)
         self.variables.pop()
+        print(self.stack_top)
 
     def visit_return_statement(self, statement):
         statement.expression.accept(self)
@@ -220,8 +229,9 @@ class Compiler:
         self.bytecode[empty_16bit_jump + 1] = len(self.bytecode) & 0x00FF
         self.bytecode[empty_16bit_jump + 3] = (len(self.bytecode) & 0xFF00) >> 8
 
-        self.bytecode.append(RET)
-        self.stack_top += 1
+        if self.functions[expression.callee.variable.lexeme].data_type != "void":
+            self.bytecode.append(RET)
+            self.stack_top += 1
 
     def push_to_stack_16bit(self, var):
         self.bytecode.append(PUSH_IMMEDIATE)
