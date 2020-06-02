@@ -1,0 +1,122 @@
+# Game
+
+int platform_x = (128 - 30) / 2;
+int platform_speed = 4;
+
+int ball_x = 10;
+int ball_y = 10;
+int ball_radius = 2;
+
+int ball_speed_x = 2;
+int ball_speed_y = 2;
+
+int ball_x_direction = 1;
+int ball_y_direction = 1;
+
+# In reality rectangle with center and radius
+void draw_ball(int x, int y, int radius)
+{
+    fill_rect(x - radius, y - radius, (radius*2) + 1, (radius*2) + 1);
+}
+
+while(True){
+    clear();
+
+    ########################################
+
+    if (read_left_button()){
+        if (platform_x <= 3){
+            platform_x = 0;
+        } else {
+            platform_x = platform_x - platform_speed;
+        }
+    }
+
+    if (read_right_button()){
+        platform_x = platform_x + platform_speed;
+    }
+
+    if ((platform_x + 30) > 127){
+        platform_x = 97;
+    }
+
+    ########################################
+
+    if (ball_x_direction){
+        ball_x = ball_x + ball_speed_x;
+    } else {
+        if (ball_x <= ball_radius) {
+            ball_x = ball_radius;
+        } else {
+            ball_x = ball_x - ball_speed_x;
+        }
+    }
+
+    if (ball_y_direction){
+        ball_y = ball_y + ball_speed_y;
+    } else {
+        if (ball_y <= ball_radius) {
+            ball_y = ball_radius;
+        } else {
+            ball_y = ball_y - ball_speed_y;
+        }
+    }
+
+    ########################################
+
+    if (ball_x <= ball_radius){
+        if (ball_x_direction == 1){
+            ball_x_direction = 0;
+        } else {
+            ball_x_direction = 1;
+        }
+    }
+
+    if (ball_x + ball_radius >= 128){
+        if (ball_x_direction == 1){
+            ball_x_direction = 0;
+        } else {
+            ball_x_direction = 1;
+        }
+    }
+
+    if (ball_y <= ball_radius){
+        if (ball_y_direction == 1){
+            ball_y_direction = 0;
+        } else {
+            ball_y_direction = 1;
+        }
+    }
+
+    ########################################
+
+    if (ball_x <= (platform_x + 30)) {
+        if (ball_x >= platform_x) {
+            if ((ball_y + ball_radius) >= 50) {
+                if ((ball_y + ball_radius) <= 52) {
+                    if (ball_y_direction == 1){
+                        ball_y_direction = 0;
+                    } else {
+                        ball_y_direction = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    if ((ball_y + ball_radius) >= 63) {
+        platform_x = (128 - 30) / 2;
+    
+        ball_x = 128 / 2 - 40;
+        ball_y = 10;
+
+        ball_x_direction = 1;
+        ball_y_direction = 1;
+    }
+
+    ########################################
+
+    draw_ball(ball_x, ball_y, ball_radius);
+    fill_rect(platform_x, 50, 30, 5);
+    display();
+}
