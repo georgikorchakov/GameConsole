@@ -40,6 +40,18 @@ class Compiler:
         self.functions = {}
         self.last_function = []
 
+        self.predefined_void_functions = {
+            "fill_rect": FILL_RECT,
+            "display": DISPLAY,
+            "clear": CLEAR,
+            "delay": DELAY
+        }
+
+        self.predefined_uint_functions = {
+            "read_left_button": READ_LEFT_BUTTON,
+            "read_right_button": READ_RIGHT_BUTTON,
+        }
+
     def compile(self):
         for statement in self.statements:
             statement.accept(self)
@@ -172,7 +184,6 @@ class Compiler:
 
 
     def visit_function_statement(self, statement):
-        print(self.stack_top)
         jump_before_function_start = len(self.bytecode)
         self.append_empty_jump()
 
@@ -198,7 +209,6 @@ class Compiler:
 
         self.add_current_position_to_empty_jump(jump_before_function_start)
         self.variables.pop()
-        print(self.stack_top)
 
     def visit_return_statement(self, statement):
         statement.expression.accept(self)
@@ -212,26 +222,38 @@ class Compiler:
         self.bytecode.append(JST)    
         
     def visit_callee_expression(self, expression):
-        empty_16bit_jump = len(self.bytecode)
-        self.push_to_stack_16bit(0)
+        if expression.callee.variable.lexeme not in self.predefined_void_functions and expression.callee.variable.lexeme not in self.predefined_uint_functions:
+            empty_16bit_jump = len(self.bytecode)
+            self.push_to_stack_16bit(0)
 
-        self.stack_top += 2
-        for argument in expression.arguments:
-            argument.accept(self)
-        self.stack_top -= 2
+            self.stack_top += 2
+            for argument in expression.arguments:
+                argument.accept(self)
+            self.stack_top -= 2
 
-        self.bytecode.append(JMP)
-        self.bytecode.append(self.functions[expression.callee.variable.lexeme].address & 0x00FF)
-        self.bytecode.append((self.functions[expression.callee.variable.lexeme].address & 0xFF00) >> 8)
+            self.bytecode.append(JMP)
+            self.bytecode.append(self.functions[expression.callee.variable.lexeme].address & 0x00FF)
+            self.bytecode.append((self.functions[expression.callee.variable.lexeme].address & 0xFF00) >> 8)
 
-        self.stack_top -= len(expression.arguments)
+            self.stack_top -= len(expression.arguments)
 
-        self.bytecode[empty_16bit_jump + 1] = len(self.bytecode) & 0x00FF
-        self.bytecode[empty_16bit_jump + 3] = (len(self.bytecode) & 0xFF00) >> 8
+            self.bytecode[empty_16bit_jump + 1] = len(self.bytecode) & 0x00FF
+            self.bytecode[empty_16bit_jump + 3] = (len(self.bytecode) & 0xFF00) >> 8
 
-        if self.functions[expression.callee.variable.lexeme].data_type != "void":
-            self.bytecode.append(RET)
-            self.stack_top += 1
+            if self.functions[expression.callee.variable.lexeme].data_type != "void":
+                self.bytecode.append(RET)
+                self.stack_top += 1
+        else:
+            for argument in expression.arguments:
+                argument.accept(self)
+
+            self.stack_top -= len(expression.arguments)
+
+            if expression.callee.variable.lexeme in self.predefined_uint_functions:
+                self.stack_top += 1
+                self.bytecode.append(self.predefined_uint_functions[expression.callee.variable.lexeme])
+            else:
+                self.bytecode.append(self.predefined_void_functions[expression.callee.variable.lexeme])
 
     def push_to_stack_16bit(self, var):
         self.bytecode.append(PUSH_IMMEDIATE)
@@ -370,6 +392,18 @@ class Compiler:
                 string += get_command_number(i) + "GEQ\n"
             elif opcode == LEQ:
                 string += get_command_number(i) + "LEQ\n"
+            elif opcode == FILL_RECT:
+                string += get_command_number(i) + "FILL_RECT\n"
+            elif opcode == DISPLAY:
+                string += get_command_number(i) + "DISPLAY\n"
+            elif opcode == CLEAR:
+                string += get_command_number(i) + "CLEAR\n"
+            elif opcode == DELAY:
+                string += get_command_number(i) + "DELAY\n"
+            elif opcode == READ_LEFT_BUTTON:
+                string += get_command_number(i) + "READ_LEFT_BUTTON\n"
+            elif opcode == READ_RIGHT_BUTTON:
+                string += get_command_number(i) + "READ_RIGHT_BUTTON\n"
             elif opcode == EOF:
                 string += get_command_number(i) + "EOF\n"
             else:

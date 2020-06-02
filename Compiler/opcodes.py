@@ -29,5 +29,12 @@ JST = 0x14  # Jump from stack
 RET = 0x15  # Push rv register on the top of the stack
 STR = 0x16  # Store last element in rv register
 
+# Predefined void functions
+FILL_RECT = 0x50
+DISPLAY = 0x51
+CLEAR = 0x52
+DELAY = 0x53
 
-
+# Predefined uint functions
+READ_LEFT_BUTTON = 0x60
+READ_RIGHT_BUTTON = 0x61
